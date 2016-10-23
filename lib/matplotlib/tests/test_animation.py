@@ -195,3 +195,22 @@ def test_movie_writer_registry():
     assert not animation.writers._dirty
     assert animation.writers.is_available("ffmpeg")
     mpl.rcParams['animation.ffmpeg_path'] = ffmpeg_path
+
+
+FIGURE_SIZES = [
+    (75, (6, 4), (6, 4)),
+    (75, (6.5, 4.5), (6.48, 4.48)),
+    (125, (6.5, 4.7), (6.496, 4.688)),
+    ]
+
+
+@cleanup
+@pytest.mark.parametrize('dpi, orig, adjusted', FIGURE_SIZES)
+def test_figure_size(dpi, orig, adjusted):
+    fig = plt.figure(dpi=dpi, figsize=orig)
+    # We can use the FileWriter for this test because its
+    # setup does not require that the executable exists.
+    writer = animation.FFMpegFileWriter(codec='h264')
+    writer.setup(fig, 'dummy.mp4', dpi)
+    newsize = fig.get_size_inches()
+    np.testing.assert_almost_equal(newsize, adjusted)
