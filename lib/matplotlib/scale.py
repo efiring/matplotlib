@@ -309,7 +309,7 @@ class LogScale(ScaleBase):
         axis.set_minor_formatter(
             LogFormatterSciNotation(self.base,
                                     labelOnlyBase=self.subs,
-                                    sublabel_filtering=True))
+                                    label_pruning=True))
 
     def get_transform(self):
         """
