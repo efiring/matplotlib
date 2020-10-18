@@ -802,7 +802,7 @@ class Collection(artist.Artist, cm.ScalarMappable):
     def _set_edgecolor(self, c):
         set_hatch_color = True
         if c is None:
-            if (mpl.rcParams['patch.force_edgecolor'] or self._edge_default):
+            if mpl.rcParams['patch.force_edgecolor'] or self._edge_default:
                 c = self._get_default_edgecolor()
             else:
                 c = 'none'
@@ -889,7 +889,10 @@ class Collection(artist.Artist, cm.ScalarMappable):
                 fc = 'array'
             ec = self._original_edgecolor
             if ec is None:
-                ec = self._get_default_edgecolor()
+                if mpl.rcParams['patch.force_edgecolor'] or self._edge_default:
+                    ec = self._get_default_edgecolor()
+                else:
+                    ec = 'none'
             if not isinstance(ec, str):
                 ec = 'array'
 
@@ -946,8 +949,7 @@ class Collection(artist.Artist, cm.ScalarMappable):
 
     def get_fill(self):
         """Return whether face is colored."""
-        fill = not cbook._str_lower_equal(self._original_facecolor, "none")
-        return fill
+        return not cbook._str_lower_equal(self._original_facecolor, "none")
 
     def update_from(self, other):
         """Copy properties from other to self."""
@@ -1457,9 +1459,10 @@ class LineCollection(Collection):
             argkw = {name: val for name, val in zip(argnames, args)}
             kwargs.update(argkw)
             cbook.warn_deprecated(
-                "3.4", message="In a future release, all LineCollection "
-                "arguments other than the first, 'segments', will be "
-                "keyword-only arguments."
+                "3.4", message="Since %(since)s, passing LineCollection "
+                "arguments other than the first, 'segments', as positional "
+                "arguments is deprecated, and they will become keyword-only "
+                "arguments %(removal)s."
                 )
         super().__init__(
             zorder=zorder,
