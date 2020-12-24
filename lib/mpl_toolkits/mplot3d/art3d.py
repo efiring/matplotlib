@@ -706,10 +706,6 @@ def _update_scalarmappable(sm):
     copy_state = sm._update_dict['array']
     ret = sm.update_scalarmappable()
     if copy_state:
-        # if sm.get_fill():
-        #     sm._facecolor3d = sm._facecolors
-        # elif not cbook._str_lower_equal(sm._original_facecolor, "none"):
-        #     sm._edgecolor3d = sm._edgecolors
         if sm._face_is_mapped:
             sm._facecolor3d = sm._facecolors
         elif sm._edge_is_mapped:  # Should this be plain "if"?
