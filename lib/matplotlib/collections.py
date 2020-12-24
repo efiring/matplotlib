@@ -171,8 +171,8 @@ class Collection(artist.Artist, cm.ScalarMappable):
         self._us_lw = [0]
         self._linewidths = [0]
         # Flags: do colors come from mapping an array?
-        self._face_is_mapped = True
-        self._edge_is_mapped = False
+        self._face_is_mapped = None
+        self._edge_is_mapped = None
         self._mapped_colors = None  # Calculated in update_scalarmappable
         self._hatch_color = mcolors.to_rgba(mpl.rcParams['hatch.color'])
         self.set_facecolor(facecolors)
@@ -802,7 +802,9 @@ class Collection(artist.Artist, cm.ScalarMappable):
     def _set_edgecolor(self, c):
         set_hatch_color = True
         if c is None:
-            if mpl.rcParams['patch.force_edgecolor'] or self._edge_default:
+            if (mpl.rcParams['patch.force_edgecolor']
+                    or self._edge_default
+                    or cbook._str_equal(self._original_facecolor, 'none')):
                 c = self._get_default_edgecolor()
             else:
                 c = 'none'
@@ -873,39 +875,20 @@ class Collection(artist.Artist, cm.ScalarMappable):
         """
         edge0 = self._edge_is_mapped
         face0 = self._face_is_mapped
-        if self._A is None:
-            self._edge_is_mapped = False
-            self._face_is_mapped = False
-        else:
-            # Typical mapping: faces, not edges.
-            self._face_is_mapped = True
-            self._edge_is_mapped = False
-
-            # Prepare color strings to check for special cases.
-            fc = self._original_facecolor
-            if fc is None:
-                fc = self._get_default_facecolor()
-            if not isinstance(fc, str):
-                fc = 'array'
-            ec = self._original_edgecolor
-            if ec is None:
-                if mpl.rcParams['patch.force_edgecolor'] or self._edge_default:
-                    ec = self._get_default_edgecolor()
-                else:
-                    ec = 'none'
-            if not isinstance(ec, str):
-                ec = 'array'
-
-            # Handle special cases.
-            if fc == 'none':
-                self._face_is_mapped = False
-                self._edge_is_mapped = True
-            elif ec == 'face':
-                self._edge_is_mapped = True
+        self._edge_is_mapped = False
+        self._face_is_mapped = False
+        if self._A is not None:
+            if not cbook._str_equal(self._original_facecolor, 'none'):
                 self._face_is_mapped = True
+                if cbook._str_equal(self._original_edgecolor, 'face'):
+                    self._edge_is_mapped = True
+            else:
+                if self._original_edgecolor is None:
+                    self._edge_is_mapped = True
 
         mapped = self._face_is_mapped or self._edge_is_mapped
-        changed = (self._edge_is_mapped != edge0
+        changed = (edge0 is None or face0 is None
+                   or self._edge_is_mapped != edge0
                    or self._face_is_mapped != face0)
         return mapped or changed
 
@@ -1464,6 +1447,7 @@ class LineCollection(Collection):
                 "arguments is deprecated, and they will become keyword-only "
                 "arguments %(removal)s."
                 )
+        kwargs.setdefault('facecolors', 'none')
         super().__init__(
             zorder=zorder,
             **kwargs)

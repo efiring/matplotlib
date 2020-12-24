@@ -778,49 +778,70 @@ def test_legend_inverse_size_label_relationship():
 @pytest.mark.style('default')
 @pytest.mark.parametrize('pcfunc', [plt.pcolor, plt.pcolormesh])
 def test_color_logic(pcfunc):
-    rgba_none = mcolors.to_rgba_array('none')
     z = np.arange(12).reshape(3, 4)
+    # Explicitly set an edgecolor.
     pc = pcfunc(z, edgecolors='red', facecolors='none')
+    pc.update_scalarmappable()  # This is called in draw().
+    # Define 2 reference "colors" here for multiple use.
     face_default = mcolors.to_rgba_array(pc._get_default_facecolor())
-    assert_array_equal(pc.get_edgecolor(), [[1, 0, 0, 1]])
+    mapped = pc.get_cmap()(pc.norm((z.ravel())))
+    # Github issue #1302:
+    assert mcolors.same_color(pc.get_edgecolor(), 'red')
     # Check setting attributes after initialization:
     pc = pcfunc(z)
     pc.set_facecolor('none')
     pc.set_edgecolor('red')
-    assert_array_equal(pc.get_edgecolor(), [[1, 0, 0, 1]])
+    pc.update_scalarmappable()
+    assert mcolors.same_color(pc.get_edgecolor(), [[1, 0, 0, 1]])
     pc.set_alpha(0.5)
-    assert_array_equal(pc.get_edgecolor(), [[1, 0, 0, 0.5]])
-    pc.set_edgecolor(None)  # reset to default
+    pc.update_scalarmappable()
+    assert mcolors.same_color(pc.get_edgecolor(), [[1, 0, 0, 0.5]])
     pc.set_alpha(None)  # restore default alpha
     pc.update_scalarmappable()
-    assert pc.get_edgecolor().shape == (12, 4)  # color-mapped
-    pc.set_facecolor(None)
+    assert mcolors.same_color(pc.get_edgecolor(), [[1, 0, 0, 1]])
+    # Reset edgecolor to default.
+    pc.set_edgecolor(None)
     pc.update_scalarmappable()
-    assert pc.get_facecolor().shape == (12, 4)  # color-mapped
-    assert_array_equal(pc.get_edgecolor(), rgba_none)  # default: 'none'
+    assert mcolors.same_color(pc.get_edgecolor(), mapped)
+    pc.set_facecolor(None)  # restore default for facecolor
+    pc.update_scalarmappable()
+    assert mcolors.same_color(pc.get_facecolor(), mapped)
+    assert mcolors.same_color(pc.get_edgecolor(), 'none')
     # Turn off colormapping entirely:
     pc.set_array(None)
     pc.update_scalarmappable()
-    assert_array_equal(pc.get_edgecolor(), rgba_none)
-    assert pc.get_facecolor().shape == (1, 4)  # no longer color-mapped
-    assert_array_equal(pc.get_facecolor(), face_default)
+    assert mcolors.same_color(pc.get_edgecolor(), 'none')
+    assert mcolors.same_color(pc.get_facecolor(), face_default)  # not mapped
     # Turn it back on by restoring the array (must be 1D!):
     pc.set_array(z.ravel())
     pc.update_scalarmappable()
-    assert pc.get_facecolor().shape == (12, 4)  # color-mapped
-    assert_array_equal(pc.get_edgecolor(), rgba_none)
+    assert mcolors.same_color(pc.get_facecolor(), mapped)
+    assert mcolors.same_color(pc.get_edgecolor(), 'none')
     # Give color via tuple rather than string.
     pc = pcfunc(z, edgecolors=(1, 0, 0), facecolors=(0, 1, 0))
-    assert_array_equal(pc.get_facecolor(), [[0, 1, 0, 1]])
-    assert_array_equal(pc.get_edgecolor(), [[1, 0, 0, 1]])
-    # Provide an RGB array.
+    pc.update_scalarmappable()
+    assert mcolors.same_color(pc.get_facecolor(), mapped)
+    assert mcolors.same_color(pc.get_edgecolor(), [[1, 0, 0, 1]])
+    # Provide an RGB array; mapping overrides it.
     pc = pcfunc(z, edgecolors=(1, 0, 0), facecolors=np.ones((12, 3)))
-    assert_array_equal(pc.get_facecolor(), np.ones((12, 4)))
-    assert_array_equal(pc.get_edgecolor(), [[1, 0, 0, 1]])
+    pc.update_scalarmappable()
+    assert mcolors.same_color(pc.get_facecolor(), mapped)
+    assert mcolors.same_color(pc.get_edgecolor(), [[1, 0, 0, 1]])
+    # Turn off the mapping.
+    pc.set_array(None)
+    pc.update_scalarmappable()
+    assert mcolors.same_color(pc.get_facecolor(), np.ones((12, 3)))
+    assert mcolors.same_color(pc.get_edgecolor(), [[1, 0, 0, 1]])
     # And an RGBA array.
     pc = pcfunc(z, edgecolors=(1, 0, 0), facecolors=np.ones((12, 4)))
-    assert_array_equal(pc.get_facecolor(), np.ones((12, 4)))
-    assert_array_equal(pc.get_edgecolor(), [[1, 0, 0, 1]])
+    pc.update_scalarmappable()
+    assert mcolors.same_color(pc.get_facecolor(), mapped)
+    assert mcolors.same_color(pc.get_edgecolor(), [[1, 0, 0, 1]])
+    # Turn off the mapping.
+    pc.set_array(None)
+    pc.update_scalarmappable()
+    assert mcolors.same_color(pc.get_facecolor(), np.ones((12, 4)))
+    assert mcolors.same_color(pc.get_edgecolor(), [[1, 0, 0, 1]])
 
 
 def test_LineCollection_args():
