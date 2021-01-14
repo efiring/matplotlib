@@ -13,7 +13,7 @@ import matplotlib.transforms as mtransforms
 from matplotlib.collections import (Collection, LineCollection,
                                     EventCollection, PolyCollection)
 from matplotlib.testing.decorators import check_figures_equal, image_comparison
-from matplotlib.cbook.deprecation import MatplotlibDeprecationWarning
+from matplotlib._api.deprecation import MatplotlibDeprecationWarning
 
 
 def generate_EventCollection_plot():
